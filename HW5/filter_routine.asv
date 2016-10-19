@@ -1,0 +1,6 @@
+function output_image = filter_routine( input_image, weights )
+    tic;
+    image_out = imfilter( input_image, weights, 'same', 'replicate' );
+    imagesc(
+    elapsed_time = toc
+end
