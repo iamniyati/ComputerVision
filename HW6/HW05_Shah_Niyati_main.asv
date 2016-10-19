@@ -1,0 +1,47 @@
+function HW05_Shah_Niyati_main( input_image )
+    addpath( '../TEST_IMAGES/' );
+    addpath( '../../TEST_IMAGES/' );
+    
+
+    
+    %Read the image and start the function call.
+    input = im2double(imread(input_image));
+    
+    
+    fltrA = [ 1 2 1 ; 0 0 0 ; -1 -2 -1 ];
+    fltrB = [ 1 0 -1 ; 2 0 -2 ; 1 0 -1 ];
+    fltrC = [ 1 0 0 0 -1 ; 2 0 0 0 -2 ; 1 0 0 0 -1 ];
+    fltrD = [ 1 0 0 0 0 0 0 0 -1 ; 2 0 0 0 0 0 0 0 -2 ; 1 0 0 0 0 0 0 0 -1 ];
+    fltrE = [ 0 -1 0 ; -1 4 -1 ; 0 -1 0 ];
+    fltrF = fspecial('laplacian', 1);
+    fltrG = fspecial('log');
+    
+    filter = {fltrA,fltrB,fltrC,fltrD,fltrE,fltrF,fltrG};
+%     
+%     for i = 1:7
+%         tic;
+%         output_image_manual{i}= local_weighting_routine(input,cell2mat(filter(i)));
+%         manual_elapsed_time{i} = toc;
+%         
+%         pause();
+%         tic;
+%         output_image_filter{i}= filter_routine(input,cell2mat(filter(i)));
+%         filter_elapsed_time{i} = toc;
+%          pause();
+%     end   
+     
+%     for i = 1:7
+ 
+        imshow(cell2mat(output_image_manual(i)));   
+        str1 = sprintf('manual filter time taken %d',cell2mat(manual_elapsed_time(1)));
+        title(str1);
+        pause();
+        
+        imshow(cell2mat(output_image_filter(i)));   
+        str2 = sprintf('imfilter time taken %d',cell2mat(manual_elapsed_time(1)));
+        title(str2);
+        
+            
+%     end
+    
+end
