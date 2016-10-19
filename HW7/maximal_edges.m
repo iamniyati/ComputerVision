@@ -1,0 +1,178 @@
+% Function to implement the canny edge detection 
+% using the non maximal suppression.
+% $input parameter = image file
+
+function maximal_edges( input_image )
+
+     % Select given image
+     im = input_image;
+
+    
+    
+    % Create a gaussian filter with size as 43 and sigma as 3.
+    
+    fltr = fspecial('Gaussian', 40 , 1 );
+    
+    % USe the above filter to remove noise from the image and unimportant
+    % edges from the image by using the imfilter fucntion where the
+    % output matrix is same as the input matrix and the replicating 
+    % the boundaries
+    im_fil = imfilter( im, fltr, 'same', 'repl' );
+    
+    % Initialize variables vt_sobel, hz_sobel with the
+    % the sobel edge detecter matrix for vertical and horizontal edges.
+    % horizontal matrix is taken as the tranpose of the vertical matrix.
+    %
+    vt_sobel = [ 1  2  1 ; 
+                 0  0  0 ;
+                -1 -2 -1 ]/8;
+    hz_sobel   = vt_sobel.';
+    
+    %
+    % Use the imfilter function and perform filtering using the horizontal and vertical
+    % edge detector variables by replicating the boundaries using 'repl' parameter and 
+    % where the output array will be same as input array by using 'same' parameter.
+    %
+    vt_edges            = imfilter( im_fil, vt_sobel, 'same', 'repl' );
+    hz_edges            = imfilter( im_fil, hz_sobel, 'same', 'repl' );
+    
+    %
+    % Compute the edge magnitude at each pizxel
+    %
+    edge_mag            = ( vt_edges.^2 + hz_edges.^2 ).^(1/2);
+    output_one          =  edge_mag;
+    
+    
+    %
+    % Compute the edge direction at each pixel in degrees
+    % and get size of array
+    %
+    edge_direction      = (atan2(vt_edges,hz_edges)*180/pi);
+    [row, col] = size(edge_direction);
+    
+    %
+    % Digititize edge direction: Converting angles to multiple of 45 degrees.
+    % Non maximal Suppression: Check if current pixel has larger magnitude
+    % than the pixel i front of it and behind it. And if it has same
+    % magnitude as threshold.
+    %
+    for i = 2: row-1
+        for j = 2: col-1                           
+            % Calculate for angle 0 deg
+            if ((round(edge_direction(i,j)) >= 0     ) && (round(edge_direction(i,j)) <= 22.5  ) ...
+             || (round(edge_direction(i,j)) >= 337.5 ) && (round(edge_direction(i,j)) <= 360   ) ...
+             || (round(edge_direction(i,j)) >= 157.5 ) && (round(edge_direction(i,j)) <= 202.5 ))
+                    edge_direction(i,j) = 0;
+                    % Check if the magnitude of the pixel above and below
+                    % it is higher or lower.
+                    % if lower than discard the pixel.
+                    if ( ( edge_mag(i,j) < edge_mag(i,j-1)) || ( edge_mag(i,j) < edge_mag(i,j+1) ))
+                           output_one(i,j) = 0;
+                    end    
+             % Calculate for angle 45 deg        
+            elseif ((round(edge_direction(i,j)) >= 22.5  ) && (round(edge_direction(i,j)) <= 67.5 ) ...
+                 || (round(edge_direction(i,j)) >= 202.5 ) && (round(edge_direction(i,j)) <= 247.5))
+                        edge_direction(i,j) = 45;
+                         % Check if the magnitude of the pixel above and below
+                         % it is higher or lower.
+                         % if lower than discard the pixel.
+                         if ( ( edge_mag(i,j) < edge_mag(i+1,j-1)) || ( edge_mag(i,j) < edge_mag(i-1,j+1) ))
+                           output_one(i,j) = 0;
+                         end
+             % Calculate for angle 90 deg  
+            elseif ((round(edge_direction(i,j)) >= 67.5  ) && (round(edge_direction(i,j)) <= 112.5 ) ...
+                 || (round(edge_direction(i,j)) >= 247.5 ) && (round(edge_direction(i,j)) <= 292.5 ))
+                        edge_direction(i,j) = 90;
+                         % Check if the magnitude of the pixel above and below
+                         % it is higher or lower.
+                         % if lower than discard the pixel.
+                         if ( ( edge_mag(i,j) < edge_mag(i-1,j)) || ( edge_mag(i,j) < edge_mag(i+1,j) ))
+                           output_one(i,j) = 0;
+                          end
+             % Calculate for angle 135 deg        
+            elseif ((round(edge_direction(i,j)) >= 112.5 ) && (round(edge_direction(i,j)) <= 157.5 ) ...
+                 || (round(edge_direction(i,j)) >= 292.5 ) && (round(edge_direction(i,j)) <= 337.5 ) )
+                        edge_direction(i,j) = 135;
+                        % Check if the magnitude of the pixel above and below
+                        % it is higher or lower.
+                        % if lower than discard the pixel.
+                         if ( ( edge_mag(i,j) < edge_mag(i-1,j-1)) || ( edge_mag(i,j) < edge_mag(i+1,j+1) ))
+                           output_one(i,j) = 0;
+                         end
+            end
+        end
+    end
+    
+    %
+    % Display the output image
+    % And save the output 
+    %
+    imagesc(output_one);
+    
+    imwrite(output_one, 'Canny_image_part1.jpg');
+    pause(5);
+    
+   
+    %
+    % Choosing low ad high thresholds
+    % initialize hysteresis image as output image.
+    %
+
+    low  = 0.05;
+    high = 0.06;
+    hysteresis = output_one;
+    
+    %
+    % Applying the 3 hysteresis condition
+    % If E(x,y) < low threshold pixel is rejected (pixel =0)
+    % If E(x,y) > high threshold pixel is accepted (pixel =1)
+    % If  low threshold < E(x,y) < high threshold then keep the pixel 
+    % ( here taken has 3rd value of 2) ( used to check later if edge 
+    % formed is continuos) 
+    %
+    
+    for i = 1:row
+        for j = 1:col
+            if output_one(i,j) < low
+                hysteresis(i,j) = 0;
+            elseif ( output_one(i,j) > low && output_one(i,j) < high )
+                        hysteresis(i,j) = 2;
+            elseif output_one(i,j) > high
+                hysteresis(i,j) = 1;
+            end
+        end
+    end
+    
+    %
+    % Appying the condition for low threshold < E(x,y) < high threshold
+    % Here check if the neighbouring pixels form a continuous edge or not.
+    % if they do then choose the pixel (pixel =1)
+    % else reject the pixel (pixel = 0)
+    % 
+    %
+      for i = 2:row-1
+        for j = 2:col-1
+          if  hysteresis(i,j) == 2
+                if ( hysteresis(i-1,j-1) == 1 || hysteresis(i+1,j+1) == 1  || ...
+                     hysteresis(i-1,j  ) == 1 || hysteresis(i+1,j  ) == 1  || ...
+                     hysteresis(i,j-1  ) == 1 || hysteresis(i,j+1  ) == 1  || ...
+                     hysteresis(i-1,j+1) == 1 || hysteresis(i+1,j-1) == 1   )
+                        hysteresis(i,j) = 1;
+                 else
+                     hysteresis(i,j) = 0;
+                 end
+            end
+        end
+      end
+    
+    %
+    % Display the output image
+    % And save the output 
+    %
+    imagesc(hysteresis);
+    imwrite(hysteresis, 'Canny_image_part2.jpg');
+    
+
+    
+    
+end
